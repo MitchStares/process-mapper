@@ -53,7 +53,7 @@ export default function Sidebar({ exportToPng, exportToJson, exportToTxt, import
         <div className="space-y-2">
           <Button onClick={() => document.getElementById('file-upload')?.click()} className="w-full justify-start">
             <Upload className="w-4 h-4 mr-2" />
-            Import Data
+            Import Previous Model
           </Button>
           <input
             id="file-upload"
