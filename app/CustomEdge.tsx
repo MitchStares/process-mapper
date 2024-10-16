@@ -1,21 +1,33 @@
 import React, { useState, useCallback } from 'react';
-import { EdgeProps, getBezierPath, EdgeLabelRenderer, MarkerType } from 'reactflow';
+import { EdgeProps, getBezierPath, EdgeLabelRenderer, MarkerType, useReactFlow, Edge } from 'reactflow';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useReactFlow, Edge } from 'reactflow';
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+
+// Define a custom type that extends EdgeProps
+interface CustomEdgeProps extends EdgeProps {
+  type?: string;
+}
 
 const EdgeControls: React.FC<{ edge: Edge; onChange: (newEdge: Edge) => void }> = ({ edge, onChange }) => {
+  const [edgeText, setEdgeText] = useState(edge.data?.text || '');
+
   const handleChange = useCallback((newStyle: Partial<Edge>) => {
     onChange({ ...edge, ...newStyle });
   }, [edge, onChange]);
+
+  const handleTextChange = useCallback(() => {
+    onChange({ ...edge, data: { ...edge.data, text: edgeText } });
+  }, [edge, edgeText, onChange]);
 
   return (
     <div className="flex flex-col space-y-2">
       <Select
         onValueChange={(value: string) => handleChange({ type: value })}
-        value={edge.type}
+        value={edge.type || 'default'}
       >
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Edge Type" />
@@ -74,24 +86,74 @@ const EdgeControls: React.FC<{ edge: Edge; onChange: (newEdge: Edge) => void }> 
         />
         <Label htmlFor="animated">Animated</Label>
       </div>
+      <div className="flex items-center space-x-2">
+        <Input
+          value={edgeText}
+          onChange={(e) => setEdgeText(e.target.value)}
+          placeholder="Edge Text"
+        />
+        <Button onClick={handleTextChange}>Set Text</Button>
+      </div>
     </div>
   );
 };
 
-const CustomEdge: React.FC<EdgeProps> = (props) => {
+const CustomEdge: React.FC<CustomEdgeProps> = (props) => {
   const [isOpen, setIsOpen] = useState(false);
   const { setEdges } = useReactFlow();
-  const { id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style = {}, markerEnd, markerStart, animated } = props;
-  const [edgePath, labelX, labelY] = getBezierPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-  });
+  const { 
+    id, 
+    sourceX, 
+    sourceY, 
+    targetX, 
+    targetY, 
+    sourcePosition, 
+    targetPosition, 
+    style = {}, 
+    markerEnd, 
+    markerStart, 
+    animated, 
+    data,
+    type = 'default'  // Provide a default value here
+  } = props;
+  
+  const getEdgePath = () => {
+    switch (type) {
+      case 'step':
+        return getBezierPath({
+          sourceX,
+          sourceY,
+          sourcePosition,
+          targetX,
+          targetY,
+          targetPosition,
+          curvature: 0,
+        });
+      case 'smoothstep':
+        return getBezierPath({
+          sourceX,
+          sourceY,
+          sourcePosition,
+          targetX,
+          targetY,
+          targetPosition,
+          curvature: 0.5,
+        });
+      default:
+        return getBezierPath({
+          sourceX,
+          sourceY,
+          sourcePosition,
+          targetX,
+          targetY,
+          targetPosition,
+        });
+    }
+  };
 
-  const onEdgeDoubleClick = useCallback((evt: React.MouseEvent<SVGPathElement, MouseEvent>) => {
+  const [edgePath, labelX, labelY] = getEdgePath();
+
+  const onEdgeClick = useCallback((evt: React.MouseEvent<SVGPathElement, MouseEvent>) => {
     evt.preventDefault();
     evt.stopPropagation();
     setIsOpen(true);
@@ -106,6 +168,11 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
     }));
   }, [setEdges]);
 
+  // Calculate the angle of the line
+  const dx = targetX - sourceX;
+  const dy = targetY - sourceY;
+  const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
   return (
     <>
       <path
@@ -115,8 +182,30 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
         d={edgePath}
         markerEnd={markerEnd}
         markerStart={markerStart}
-        onDoubleClick={onEdgeDoubleClick}
+        onClick={onEdgeClick}
       />
+      {data?.text && (
+        <g transform={`translate(${(sourceX + targetX) / 2}, ${(sourceY + targetY) / 2})`}>
+          <rect
+            x="-2"
+            y="-10"
+            width={data.text.length * 8 + 4}
+            height="20"
+            fill="white"
+            stroke="none"
+          />
+          <text
+            style={{
+              fontSize: 12,
+              textAnchor: 'middle',
+              alignmentBaseline: 'middle',
+              transform: `rotate(${angle < 90 && angle > -90 ? angle : angle - 180}deg)`,
+            }}
+          >
+            {data.text}
+          </text>
+        </g>
+      )}
       <EdgeLabelRenderer>
         <div
           style={{

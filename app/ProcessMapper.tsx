@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import ReactFlow, {
   MiniMap,
   Controls,
@@ -14,7 +14,8 @@ import ReactFlow, {
   useReactFlow,
   ReactFlowInstance,
   MarkerType,
-  NodeResizer,
+  NodeMouseHandler,
+  EdgeMouseHandler,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { toPng } from 'html-to-image'
@@ -40,13 +41,13 @@ import Sidebar from './Sidebar'
 import SchemaEditor from './SchemaEditor'
 import TextNode from './TextNode'
 
-const nodeTypes = {
-  process: ProcessNode,
-  database: DatabaseNode,
-  application: ApplicationNode,
-  schema: SchemaNode,
-  text: TextNode,
-}
+// const nodeTypes = {
+//   process: ProcessNode,
+//   database: DatabaseNode,
+//   application: ApplicationNode,
+//   schema: SchemaNode,
+//   text: TextNode,
+// }
 
 const edgeTypes = {
   custom: CustomEdge,
@@ -66,6 +67,8 @@ export default function ProcessMapper() {
   const [fontSize, setFontSize] = useState('16px');
   const [fontWeight, setFontWeight] = useState('normal');
 
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; visible: boolean }>({ x: 0, y: 0, visible: false });
+
   const onConnect = useCallback((params: Connection) => {
     // Ensure that source and target are strings
     if (params.source && params.target) {
@@ -73,10 +76,13 @@ export default function ProcessMapper() {
         id: `e${params.source}-${params.target}`,
         source: params.source,
         target: params.target,
-        type: 'custom',
+        sourceHandle: params.sourceHandle,
+        targetHandle: params.targetHandle,
+        type: 'custom', // This ensures all edges use our CustomEdge component
         animated: false,
         style: { stroke: '#999', strokeWidth: 2 },
         markerEnd: { type: MarkerType.ArrowClosed },
+        data: { text: '' },
       };
       setEdges((eds) => addEdge(newEdge, eds));
     }
@@ -115,7 +121,7 @@ export default function ProcessMapper() {
       type,
       position,
       data: { 
-        label: type === 'text' ? 'Double click to edit' : `${type.charAt(0).toUpperCase() + type.slice(1)}`,
+        label: type === 'text' ? 'Click to edit' : `${type.charAt(0).toUpperCase() + type.slice(1)}`,
         onChange: (newLabel: string, newFontSize?: string, newFontWeight?: string) => 
           updateNodeLabel(newNode.id, newLabel, newFontSize, newFontWeight),
         fontSize: '16px',
@@ -160,18 +166,28 @@ export default function ProcessMapper() {
   const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
     if (isDeleteMode) {
       setEdges((eds) => eds.filter((e) => e.id !== edge.id))
+    } else {
+      // Toggle edge selection
+      setEdges((eds) => 
+        eds.map((e) => 
+          e.id === edge.id ? { ...e, selected: !e.selected } : { ...e, selected: false }
+        )
+      );
     }
   }, [isDeleteMode, setEdges])
 
   const onNodeDoubleClick = useCallback((event: React.MouseEvent, node: Node) => {
-    setSelectedNode(node);
-    setNodeLabel(node.data.label);
-    setIsDialogOpen(true);
+    if (node.type !== 'text') {
+      setSelectedNode(node);
+      setNodeLabel(node.data.label);
+      setIsDialogOpen(true);
+    }
   }, []);
 
   const onPaneClick = useCallback(() => {
-    setSelectedNode(null)
-  }, [])
+    setSelectedNode(null);
+    setContextMenu({ x: 0, y: 0, visible: false });
+  }, []);
 
   const onKeyDown = useCallback((event: KeyboardEvent) => {
     // Check if the active element is an input or textarea
@@ -194,10 +210,6 @@ export default function ProcessMapper() {
       document.removeEventListener('keydown', onKeyDown)
     }
   }, [onKeyDown])
-
-  const toggleDeleteMode = useCallback(() => {
-    setIsDeleteMode((prev) => !prev)
-  }, [])
 
   const exportToPng = useCallback(() => {
     if (reactFlowWrapper.current === null) {
@@ -343,6 +355,56 @@ export default function ProcessMapper() {
     type: string;
   }
 
+  const nodeTypes = useMemo(() => ({
+    process: ProcessNode,
+    database: DatabaseNode,
+    application: ApplicationNode,
+    schema: SchemaNode,
+    text: TextNode,
+  }), []);
+
+  // Add this function
+  const toggleDeleteMode = useCallback(() => {
+    setIsDeleteMode((prev) => !prev);
+  }, []);
+
+  const onNodeContextMenu: NodeMouseHandler = useCallback(
+    (event, node) => {
+      event.preventDefault();
+      setSelectedNode(node);
+      setContextMenu({ x: event.clientX, y: event.clientY, visible: true });
+    },
+    [setSelectedNode]
+  );
+
+  const onEdgeContextMenu: EdgeMouseHandler = useCallback(
+    (event, edge) => {
+      event.preventDefault();
+      setEdges((eds) => eds.map((e) => ({...e, selected: e.id === edge.id})));
+      setContextMenu({ x: event.clientX, y: event.clientY, visible: true });
+    },
+    [setEdges]
+  );
+
+  const duplicateNode = useCallback(() => {
+    if (selectedNode) {
+      const newNode = {
+        ...selectedNode,
+        id: `${selectedNode.type}-${Date.now()}`,
+        position: {
+          x: selectedNode.position.x + 50,
+          y: selectedNode.position.y + 50,
+        },
+      };
+      setNodes((nds) => [...nds, newNode]);
+    }
+  }, [selectedNode, setNodes]);
+
+  const deleteSelectedElements = useCallback(() => {
+    setNodes((nds) => nds.filter((node) => !node.selected));
+    setEdges((eds) => eds.filter((edge) => !edge.selected));
+  }, [setNodes, setEdges]);
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex-grow flex">
@@ -370,26 +432,54 @@ export default function ProcessMapper() {
             onPaneClick={onPaneClick}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
+            onNodeContextMenu={onNodeContextMenu}
+            onEdgeContextMenu={onEdgeContextMenu}
             fitView
           >
             <Controls />
             <MiniMap />
             <Background color="#aaa" gap={12} size={1} />
-            {nodes.map((node) => (
-              <NodeResizer
-                key={node.id}
-                nodeId={node.id}
-                isVisible={selectedNode?.id === node.id}
-                minWidth={100}
-                minHeight={50}
-              />
-            ))}
-            
           </ReactFlow>
+          {contextMenu.visible && (
+            <div
+              style={{
+                position: 'absolute',
+                top: contextMenu.y,
+                left: contextMenu.x,
+                zIndex: 1000,
+              }}
+              className="bg-white border rounded shadow-md p-2"
+            >
+              {selectedNode && (
+                <>
+                  <button
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                    onClick={duplicateNode}
+                  >
+                    Duplicate
+                  </button>
+                  <button
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                    onClick={deleteSelectedElements}
+                  >
+                    Delete
+                  </button>
+                </>
+              )}
+              {!selectedNode && (
+                <button
+                  className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                  onClick={deleteSelectedElements}
+                >
+                  Delete
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
       <Dialog 
-        open={isDialogOpen} 
+        open={isDialogOpen && selectedNode?.type !== 'text'} 
         onOpenChange={setIsDialogOpen}
       >
         <DialogContent ref={dialogContentRef}>
