@@ -151,7 +151,10 @@ export default function ProcessMapper() {
   }, [])
 
   const onKeyDown = useCallback((event: KeyboardEvent) => {
-    if (event.key === 'Delete' || event.key === 'Backspace') {
+    // Check if the active element is an input or textarea
+    const isEditingText = ['INPUT', 'TEXTAREA'].includes((document.activeElement as HTMLElement)?.tagName);
+
+    if ((event.key === 'Delete' || event.key === 'Backspace') && !isEditingText) {
       if (selectedNode) {
         setNodes((nds) => nds.filter((n) => n.id !== selectedNode.id))
         setEdges((eds) => eds.filter((e) => e.source !== selectedNode.id && e.target !== selectedNode.id))
@@ -341,7 +344,15 @@ export default function ProcessMapper() {
           </ReactFlow>
         </div>
       </div>
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog 
+        open={isDialogOpen} 
+        onOpenChange={setIsDialogOpen}
+        onKeyDown={(e) => {
+          if (e.key === 'Delete' || e.key === 'Backspace') {
+            e.stopPropagation();
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Node</DialogTitle>
