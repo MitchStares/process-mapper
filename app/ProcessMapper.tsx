@@ -294,6 +294,27 @@ export default function ProcessMapper() {
     return { nodes: [], edges: [] };
   };
 
+  const dialogContentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleDialogKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.stopPropagation();
+      }
+    };
+
+    const dialogContent = dialogContentRef.current;
+    if (dialogContent) {
+      dialogContent.addEventListener('keydown', handleDialogKeyDown);
+    }
+
+    return () => {
+      if (dialogContent) {
+        dialogContent.removeEventListener('keydown', handleDialogKeyDown);
+      }
+    };
+  }, []);
+
   interface Column {
     name: string;
     type: string;
@@ -347,13 +368,8 @@ export default function ProcessMapper() {
       <Dialog 
         open={isDialogOpen} 
         onOpenChange={setIsDialogOpen}
-        onKeyDown={(e) => {
-          if (e.key === 'Delete' || e.key === 'Backspace') {
-            e.stopPropagation();
-          }
-        }}
       >
-        <DialogContent>
+        <DialogContent ref={dialogContentRef}>
           <DialogHeader>
             <DialogTitle>Edit Node</DialogTitle>
             <DialogDescription>
