@@ -23,12 +23,18 @@ const ProcessNode: React.FC<NodeProps> = ({ id, data, isConnectable }) => {
         hover:border-gray-600 transition-colors duration-300
       `}
     >
-      <Handle type="target" position={Position.Top} isConnectable={isConnectable} />
+      <Handle type="target" position={Position.Top} id={`${id}-top-target`} isConnectable={isConnectable} />
+      <Handle type="source" position={Position.Top} id={`${id}-top-source`} isConnectable={isConnectable} />
+      <Handle type="target" position={Position.Right} id={`${id}-right-target`} isConnectable={isConnectable} />
+      <Handle type="source" position={Position.Right} id={`${id}-right-source`} isConnectable={isConnectable} />
+      <Handle type="target" position={Position.Bottom} id={`${id}-bottom-target`} isConnectable={isConnectable} />
+      <Handle type="source" position={Position.Bottom} id={`${id}-bottom-source`} isConnectable={isConnectable} />
+      <Handle type="target" position={Position.Left} id={`${id}-left-target`} isConnectable={isConnectable} />
+      <Handle type="source" position={Position.Left} id={`${id}-left-source`} isConnectable={isConnectable} />
       <div className="flex items-center">
         <Share2 className="w-6 h-6 mr-2" />
         <span className="text-sm font-bold">{data.label}</span>
       </div>
-      <Handle type="source" position={Position.Bottom} isConnectable={isConnectable} />
     </div>
   );
 };

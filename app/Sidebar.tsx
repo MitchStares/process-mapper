@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { Database, FileSpreadsheet, Layout, Share2, FileJson, Image, FileText, Trash2, Upload } from 'lucide-react'
+import { Database, FileSpreadsheet, Layout, Share2, FileJson, Image, FileText, Trash2, Upload, Type } from 'lucide-react'
 
 interface SidebarProps {
   exportToPng: () => void;
@@ -15,6 +15,7 @@ const nodeTypes = [
   { type: 'database', icon: Database, label: 'Database' },
   { type: 'application', icon: Layout, label: 'Application' },
   { type: 'schema', icon: FileSpreadsheet, label: 'Schema' },
+  { type: 'text', icon: Type, label: 'Text Annotation' },
 ]
 
 export default function Sidebar({ exportToPng, exportToJson, exportToTxt, importData, toggleDeleteMode, isDeleteMode }: SidebarProps) {

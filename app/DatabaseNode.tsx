@@ -34,7 +34,14 @@ const DatabaseNode: React.FC<NodeProps<DatabaseNodeData>> = ({ id, data, isConne
         hover:border-gray-600 transition-colors duration-300
       `}
     >
-      <Handle type="target" position={Position.Top} isConnectable={isConnectable} />
+      <Handle type="target" position={Position.Top} id={`${id}-top-target`} isConnectable={isConnectable} />
+      <Handle type="source" position={Position.Top} id={`${id}-top-source`} isConnectable={isConnectable} />
+      <Handle type="target" position={Position.Right} id={`${id}-right-target`} isConnectable={isConnectable} />
+      <Handle type="source" position={Position.Right} id={`${id}-right-source`} isConnectable={isConnectable} />
+      <Handle type="target" position={Position.Bottom} id={`${id}-bottom-target`} isConnectable={isConnectable} />
+      <Handle type="source" position={Position.Bottom} id={`${id}-bottom-source`} isConnectable={isConnectable} />
+      <Handle type="target" position={Position.Left} id={`${id}-left-target`} isConnectable={isConnectable} />
+      <Handle type="source" position={Position.Left} id={`${id}-left-source`} isConnectable={isConnectable} />
       <div className="px-4 py-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
@@ -57,7 +64,6 @@ const DatabaseNode: React.FC<NodeProps<DatabaseNodeData>> = ({ id, data, isConne
           ))}
         </div>
       )}
-      <Handle type="source" position={Position.Bottom} isConnectable={isConnectable} />
     </div>
   );
 };

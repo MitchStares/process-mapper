@@ -29,6 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useToast } from "@/components/ui/use-toast"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 import ProcessNode from './ProcessNode'
 import DatabaseNode from './DatabaseNode'
@@ -37,12 +38,14 @@ import SchemaNode from './SchemaNode'
 import CustomEdge from './CustomEdge'
 import Sidebar from './Sidebar'
 import SchemaEditor from './SchemaEditor'
+import TextNode from './TextNode'
 
 const nodeTypes = {
   process: ProcessNode,
   database: DatabaseNode,
   application: ApplicationNode,
   schema: SchemaNode,
+  text: TextNode,
 }
 
 const edgeTypes = {
@@ -60,32 +63,46 @@ export default function ProcessMapper() {
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null)
   const [nodeLabel, setNodeLabel] = useState('');
   const { toast } = useToast()
+  const [fontSize, setFontSize] = useState('16px');
+  const [fontWeight, setFontWeight] = useState('normal');
 
-  const onConnect = useCallback((params: Edge | Connection) => {
-    const newEdge = {
+  const onConnect = useCallback((params: Connection) => {
+    const newEdge: Edge = {
       ...params,
+      id: `e${params.source}-${params.target}`,
       type: 'custom',
-      markerEnd: { type: MarkerType.ArrowClosed },
-      style: { strokeWidth: 2 },
-    }
-    setEdges((eds) => addEdge(newEdge, eds))
-  }, [setEdges])
+      animated: false,
+      style: { stroke: '#999', strokeWidth: 2 },
+      markerEnd: { type: MarkerType.ArrowClosed }, // Set default arrow to end
+    };
+    setEdges((eds) => addEdge(newEdge, eds));
+  }, [setEdges]);
 
   const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault()
     event.dataTransfer.dropEffect = 'move'
   }, [])
 
-  const updateNodeLabel = useCallback((id: string, newLabel: string) => {
+  const updateNodeLabel = useCallback((id: string, newLabel: string, newFontSize?: string, newFontWeight?: string) => {
     setNodes((nds) =>
       nds.map((node) => {
         if (node.id === id) {
-          return { ...node, data: { ...node.data, label: newLabel } };
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              label: newLabel,
+              fontSize: newFontSize || node.data.fontSize,
+              fontWeight: newFontWeight || node.data.fontWeight,
+            }
+          };
         }
         return node;
       })
     );
     setNodeLabel(newLabel);
+    if (newFontSize) setFontSize(newFontSize);
+    if (newFontWeight) setFontWeight(newFontWeight);
   }, [setNodes]);
 
   const createNode = useCallback((type: string, position: { x: number, y: number }) => {
@@ -94,13 +111,16 @@ export default function ProcessMapper() {
       type,
       position,
       data: { 
-        label: `${type.charAt(0).toUpperCase() + type.slice(1)}`,
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        onLabelChange: (_newLabel: string) => {} // Use underscore to indicate unused parameter
+        label: type === 'text' ? 'Double click to edit' : `${type.charAt(0).toUpperCase() + type.slice(1)}`,
+        onChange: (newLabel: string, newFontSize?: string, newFontWeight?: string) => 
+          updateNodeLabel(newNode.id, newLabel, newFontSize, newFontWeight),
+        fontSize: '16px',
+        fontWeight: 'normal',
       },
-    };
+    }
+
     return newNode;
-  }, []);
+  }, [updateNodeLabel]);
 
   const onDrop = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
@@ -119,7 +139,6 @@ export default function ProcessMapper() {
       });
 
       const newNode = createNode(type, position);
-      newNode.data.onLabelChange = (newLabel: string) => updateNodeLabel(newNode.id, newLabel);
       setNodes((nds) => nds.concat(newNode));
     },
     [project, setNodes, createNode, updateNodeLabel]
@@ -393,6 +412,51 @@ export default function ProcessMapper() {
                 className="col-span-3"
               />
             </div>
+            {selectedNode?.type === 'text' && (
+              <>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="fontSize" className="text-right">
+                    Font Size
+                  </Label>
+                  <Select
+                    onValueChange={(value) => {
+                      setFontSize(value);
+                      updateNodeLabel(selectedNode.id, nodeLabel, value, fontWeight);
+                    }}
+                    value={fontSize}
+                  >
+                    <SelectTrigger className="w-full col-span-3">
+                      <SelectValue placeholder="Font Size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="12px">Small</SelectItem>
+                      <SelectItem value="16px">Medium</SelectItem>
+                      <SelectItem value="20px">Large</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="fontWeight" className="text-right">
+                    Font Weight
+                  </Label>
+                  <Select
+                    onValueChange={(value) => {
+                      setFontWeight(value);
+                      updateNodeLabel(selectedNode.id, nodeLabel, fontSize, value);
+                    }}
+                    value={fontWeight}
+                  >
+                    <SelectTrigger className="w-full col-span-3">
+                      <SelectValue placeholder="Font Weight" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="bold">Bold</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
             {(selectedNode?.type === 'database' || selectedNode?.type === 'schema') && (
               <SchemaEditor
                 nodeId={selectedNode.id}

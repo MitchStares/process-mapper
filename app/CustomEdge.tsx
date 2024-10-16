@@ -3,6 +3,8 @@ import { EdgeProps, getBezierPath, EdgeLabelRenderer, MarkerType } from 'reactfl
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useReactFlow, Edge } from 'reactflow';
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 
 const EdgeControls: React.FC<{ edge: Edge; onChange: (newEdge: Edge) => void }> = ({ edge, onChange }) => {
   const handleChange = useCallback((newStyle: Partial<Edge>) => {
@@ -25,15 +27,31 @@ const EdgeControls: React.FC<{ edge: Edge; onChange: (newEdge: Edge) => void }> 
         </SelectContent>
       </Select>
       <Select
-        onValueChange={(value: MarkerType) => handleChange({ markerEnd: { type: value } })}
-        value={(edge.markerEnd as { type: string })?.type || MarkerType.ArrowClosed}
+        onValueChange={(value: string) => {
+          if (value === 'none') {
+            handleChange({ markerEnd: undefined, markerStart: undefined });
+          } else if (value === 'start') {
+            handleChange({ markerEnd: undefined, markerStart: { type: MarkerType.ArrowClosed } });
+          } else if (value === 'end') {
+            handleChange({ markerEnd: { type: MarkerType.ArrowClosed }, markerStart: undefined });
+          } else if (value === 'both') {
+            handleChange({ markerEnd: { type: MarkerType.ArrowClosed }, markerStart: { type: MarkerType.ArrowClosed } });
+          }
+        }}
+        value={
+          edge.markerEnd && edge.markerStart ? 'both' :
+          edge.markerEnd ? 'end' :
+          edge.markerStart ? 'start' : 'none'
+        }
       >
         <SelectTrigger className="w-full">
-          <SelectValue placeholder="Arrow Type" />
+          <SelectValue placeholder="Arrow Direction" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value={MarkerType.Arrow}>Single Arrow</SelectItem>
-          <SelectItem value={MarkerType.ArrowClosed}>Double Arrow</SelectItem>
+          <SelectItem value="none">No Arrow</SelectItem>
+          <SelectItem value="start">Start Arrow</SelectItem>
+          <SelectItem value="end">End Arrow</SelectItem>
+          <SelectItem value="both">Both Arrows</SelectItem>
         </SelectContent>
       </Select>
       <Select
@@ -48,6 +66,14 @@ const EdgeControls: React.FC<{ edge: Edge; onChange: (newEdge: Edge) => void }> 
           <SelectItem value="5,5">Dashed</SelectItem>
         </SelectContent>
       </Select>
+      <div className="flex items-center space-x-2">
+        <Switch
+          id="animated"
+          checked={edge.animated}
+          onCheckedChange={(checked) => handleChange({ animated: checked })}
+        />
+        <Label htmlFor="animated">Animated</Label>
+      </div>
     </div>
   );
 };
@@ -55,7 +81,7 @@ const EdgeControls: React.FC<{ edge: Edge; onChange: (newEdge: Edge) => void }> 
 const CustomEdge: React.FC<EdgeProps> = (props) => {
   const [isOpen, setIsOpen] = useState(false);
   const { setEdges } = useReactFlow();
-  const { id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style = {}, markerEnd } = props;
+  const { id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style = {}, markerEnd, markerStart, animated } = props;
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
@@ -72,7 +98,12 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
   }, []);
 
   const onChangeEdge = useCallback((newEdge: Edge) => {
-    setEdges((eds) => eds.map((e) => (e.id === newEdge.id ? newEdge : e)));
+    setEdges((eds) => eds.map((e) => {
+      if (e.id === newEdge.id) {
+        return { ...e, ...newEdge };
+      }
+      return e;
+    }));
   }, [setEdges]);
 
   return (
@@ -80,9 +111,10 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
       <path
         id={id}
         style={style}
-        className="react-flow__edge-path"
+        className={`react-flow__edge-path ${animated ? 'react-flow__edge-path-animated' : ''}`}
         d={edgePath}
         markerEnd={markerEnd}
+        markerStart={markerStart}
         onDoubleClick={onEdgeDoubleClick}
       />
       <EdgeLabelRenderer>
