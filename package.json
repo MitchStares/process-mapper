@@ -25,7 +25,8 @@
     "react-dom": "^18",
     "reactflow": "^11.11.4",
     "tailwind-merge": "^2.5.4",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "toast": "^0.5.4"
   },
   "devDependencies": {
     "@types/node": "^20",

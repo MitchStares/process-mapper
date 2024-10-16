@@ -76,36 +76,54 @@ export default function ProcessMapper() {
     event.dataTransfer.dropEffect = 'move'
   }, [])
 
+  const updateNodeLabel = useCallback((id: string, newLabel: string) => {
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === id) {
+          return { ...node, data: { ...node.data, label: newLabel } };
+        }
+        return node;
+      })
+    );
+    setNodeLabel(newLabel);
+  }, [setNodes]);
+
+  const createNode = useCallback((type: string, position: { x: number, y: number }) => {
+    const newNode = {
+      id: `${type}-${Date.now()}`,
+      type,
+      position,
+      data: { 
+        label: `${type.charAt(0).toUpperCase() + type.slice(1)}`,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        onLabelChange: (_newLabel: string) => {} // Use underscore to indicate unused parameter
+      },
+    };
+    return newNode;
+  }, []);
+
   const onDrop = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
-      event.preventDefault()
+      event.preventDefault();
 
-      const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect()
-      const type = event.dataTransfer.getData('application/reactflow')
+      const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
+      const type = event.dataTransfer.getData('application/reactflow');
 
       if (typeof type === 'undefined' || !type || !reactFlowBounds) {
-        return
+        return;
       }
 
       const position = project({
         x: event.clientX - reactFlowBounds.left,
         y: event.clientY - reactFlowBounds.top,
-      })
+      });
 
-      const newNode = {
-        id: `${type}-${Date.now()}`,
-        type,
-        position,
-        data: { 
-          label: `${type.charAt(0).toUpperCase() + type.slice(1)}`, // Remove " node" from the label
-          onLabelChange: (newLabel: string) => updateNodeLabel(newNode.id, newLabel)
-        },
-      }
-
-      setNodes((nds) => nds.concat(newNode))
+      const newNode = createNode(type, position);
+      newNode.data.onLabelChange = (newLabel: string) => updateNodeLabel(newNode.id, newLabel);
+      setNodes((nds) => nds.concat(newNode));
     },
-    [project, setNodes]
-  )
+    [project, setNodes, createNode, updateNodeLabel]
+  );
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
     if (isDeleteMode) {
@@ -131,18 +149,6 @@ export default function ProcessMapper() {
   const onPaneClick = useCallback(() => {
     setSelectedNode(null)
   }, [])
-
-  const updateNodeLabel = useCallback((id: string, newLabel: string) => {
-    setNodes((nds) =>
-      nds.map((node) => {
-        if (node.id === id) {
-          return { ...node, data: { ...node.data, label: newLabel } };
-        }
-        return node;
-      })
-    );
-    setNodeLabel(newLabel);
-  }, [setNodes]);
 
   const onKeyDown = useCallback((event: KeyboardEvent) => {
     if (event.key === 'Delete' || event.key === 'Backspace') {
@@ -275,7 +281,7 @@ export default function ProcessMapper() {
       }
     };
     reader.readAsText(file);
-  }, [setNodes, setEdges]);
+  }, [setNodes, setEdges, toast]);
 
   // Placeholder function for parsing C4 model text
   const parseC4ModelText = (text: string) => {

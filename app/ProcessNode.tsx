@@ -1,13 +1,14 @@
 import React from 'react';
-import { Handle, Position, NodeProps, useStore } from 'reactflow';
+import { Handle, Position, NodeProps, useStore, ReactFlowState } from 'reactflow';
 import { Share2 } from 'lucide-react';
 
-interface ReactFlowState {
-  selectedElements: Array<{ id: string; type: string }> | null;
-}
+// Remove or comment out the custom ReactFlowState interface
+// interface ReactFlowState {
+//   selectedElements: Array<{ id: string; type: string }> | null;
+// }
 
 const selector = (state: ReactFlowState) => ({
-  selectedNodes: state.selectedElements?.filter((el) => el.type === 'node') || [],
+  selectedNodes: state.getNodes().filter(node => node.selected) || [],
 });
 
 const ProcessNode: React.FC<NodeProps> = ({ id, data, isConnectable }) => {

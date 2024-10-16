@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Handle, Position, NodeProps, useStore } from 'reactflow';
 import { FileSpreadsheet, ChevronDown, ChevronUp } from 'lucide-react';
+import { ReactFlowState } from 'reactflow';
 
 interface Column {
   name: string;
@@ -12,12 +13,10 @@ interface SchemaNodeData {
   columns?: Column[];
 }
 
-interface ReactFlowState {
-  selectedElements: Array<{ id: string; type: string }> | null;
-}
-
 const selector = (state: ReactFlowState) => ({
-  selectedNodes: state.selectedElements?.filter((el) => el.type === 'node') || [],
+  selectedNodes: state.nodeInternals
+    ? Array.from(state.nodeInternals.values()).filter(node => node.selected)
+    : [],
 });
 
 const SchemaNode: React.FC<NodeProps<SchemaNodeData>> = ({ id, data, isConnectable }) => {

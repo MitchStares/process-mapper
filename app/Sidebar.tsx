@@ -63,19 +63,19 @@ export default function Sidebar({ exportToPng, exportToJson, exportToTxt, import
             style={{ display: 'none' }}
           />
           <Button onClick={exportToPng} className="w-full justify-start">
-            <Image className="w-4 h-4 mr-2" />
+            <Image aria-label="Export to PNG icon"className="w-4 h-4 mr-2" />
             Export to PNG
           </Button>
           <Button onClick={exportToJson} className="w-full justify-start">
-            <FileJson className="w-4 h-4 mr-2" />
+            <FileJson aria-label="Export to JSON icon" className="w-4 h-4 mr-2" />
             Export to JSON
           </Button>
           <Button onClick={exportToTxt} className="w-full justify-start">
-            <FileText className="w-4 h-4 mr-2" />
+            <FileText aria-label="Export to TXT icon" className="w-4 h-4 mr-2" />
             Export to TXT
           </Button>
           <Button onClick={toggleDeleteMode} variant={isDeleteMode ? "destructive" : "secondary"} className="w-full justify-start">
-            <Trash2 className="w-4 h-4 mr-2" />
+            <Trash2 aria-label="Delete Mode icon" className="w-4 h-4 mr-2" />
             {isDeleteMode ? "Exit Delete Mode" : "Enter Delete Mode"}
           </Button>
         </div>

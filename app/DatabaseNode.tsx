@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Handle, Position, NodeProps, useStore } from 'reactflow';
 import { Database, ChevronDown, ChevronUp } from 'lucide-react';
+import { ReactFlowState } from 'reactflow';
 
 interface Column {
   name: string;
@@ -12,12 +13,12 @@ interface DatabaseNodeData {
   columns?: Column[];
 }
 
-interface ReactFlowState {
-  selectedElements: Array<{ id: string; type: string }> | null;
-}
+// const selector = (state: ReactFlowState) => ({
+//   selectedElements: state.selectedElements?.filter((el) => el.type === 'node') || [],
+// });
 
 const selector = (state: ReactFlowState) => ({
-  selectedNodes: state.selectedElements?.filter((el) => el.type === 'node') || [],
+  selectedNodes: state.getNodes().filter(node => node.selected) || [],
 });
 
 const DatabaseNode: React.FC<NodeProps<DatabaseNodeData>> = ({ id, data, isConnectable }) => {

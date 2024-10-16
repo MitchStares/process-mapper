@@ -1,13 +1,10 @@
 import React from 'react';
-import { Handle, Position, NodeProps, useStore } from 'reactflow';
+import { Handle, Position, NodeProps, useStore, Node } from 'reactflow';
 import { Layout } from 'lucide-react';
-
-interface ReactFlowState {
-  selectedElements: Array<{ id: string; type: string }> | null;
-}
+import { ReactFlowState } from 'reactflow';
 
 const selector = (state: ReactFlowState) => ({
-  selectedNodes: state.selectedElements?.filter((el) => el.type === 'node') || [],
+  selectedNodes: state.getNodes().filter((node: Node) => node.selected) || [],
 });
 
 const ApplicationNode: React.FC<NodeProps> = ({ id, data, isConnectable }) => {
