@@ -67,15 +67,19 @@ export default function ProcessMapper() {
   const [fontWeight, setFontWeight] = useState('normal');
 
   const onConnect = useCallback((params: Connection) => {
-    const newEdge: Edge = {
-      ...params,
-      id: `e${params.source}-${params.target}`,
-      type: 'custom',
-      animated: false,
-      style: { stroke: '#999', strokeWidth: 2 },
-      markerEnd: { type: MarkerType.ArrowClosed }, // Set default arrow to end
-    };
-    setEdges((eds) => addEdge(newEdge, eds));
+    // Ensure that source and target are strings
+    if (params.source && params.target) {
+      const newEdge: Edge = {
+        id: `e${params.source}-${params.target}`,
+        source: params.source,
+        target: params.target,
+        type: 'custom',
+        animated: false,
+        style: { stroke: '#999', strokeWidth: 2 },
+        markerEnd: { type: MarkerType.ArrowClosed },
+      };
+      setEdges((eds) => addEdge(newEdge, eds));
+    }
   }, [setEdges]);
 
   const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
@@ -141,7 +145,7 @@ export default function ProcessMapper() {
       const newNode = createNode(type, position);
       setNodes((nds) => nds.concat(newNode));
     },
-    [project, setNodes, createNode, updateNodeLabel]
+    [project, setNodes, createNode]
   );
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
