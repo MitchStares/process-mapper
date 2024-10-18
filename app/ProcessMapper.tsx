@@ -79,7 +79,7 @@ export default function ProcessMapper() {
         sourceHandle: params.sourceHandle,
         targetHandle: params.targetHandle,
         type: 'custom', // This ensures all edges use our CustomEdge component
-        animated: false,
+        animated: true, // Set animated to true by default
         style: { stroke: '#999', strokeWidth: 2 },
         markerEnd: { type: MarkerType.ArrowClosed },
         data: { text: '' },

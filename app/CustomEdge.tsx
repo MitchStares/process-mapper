@@ -23,38 +23,35 @@ const EdgeControls: React.FC<{ edge: Edge; onChange: (newEdge: Edge) => void }> 
     onChange({ ...edge, data: { ...edge.data, text: edgeText } });
   }, [edge, edgeText, onChange]);
 
+  const getArrowValue = () => {
+    if (edge.markerStart && edge.markerEnd) return 'both';
+    if (edge.markerStart) return 'start';
+    if (edge.markerEnd) return 'end';
+    return 'none';
+  };
+
   return (
     <div className="flex flex-col space-y-2">
       <Select
-        onValueChange={(value: string) => handleChange({ type: value })}
-        value={edge.type || 'default'}
-      >
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Edge Type" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="default">Default</SelectItem>
-          <SelectItem value="step">Step</SelectItem>
-          <SelectItem value="smoothstep">Smooth Step</SelectItem>
-        </SelectContent>
-      </Select>
-      <Select
         onValueChange={(value: string) => {
-          if (value === 'none') {
-            handleChange({ markerEnd: undefined, markerStart: undefined });
-          } else if (value === 'start') {
-            handleChange({ markerEnd: undefined, markerStart: { type: MarkerType.ArrowClosed } });
-          } else if (value === 'end') {
-            handleChange({ markerEnd: { type: MarkerType.ArrowClosed }, markerStart: undefined });
-          } else if (value === 'both') {
-            handleChange({ markerEnd: { type: MarkerType.ArrowClosed }, markerStart: { type: MarkerType.ArrowClosed } });
+          let newEdge: Partial<Edge> = {};
+          switch (value) {
+            case 'none':
+              newEdge = { markerStart: undefined, markerEnd: undefined };
+              break;
+            case 'start':
+              newEdge = { markerStart: { type: MarkerType.ArrowClosed }, markerEnd: undefined };
+              break;
+            case 'end':
+              newEdge = { markerStart: undefined, markerEnd: { type: MarkerType.ArrowClosed } };
+              break;
+            case 'both':
+              newEdge = { markerStart: { type: MarkerType.ArrowClosed }, markerEnd: { type: MarkerType.ArrowClosed } };
+              break;
           }
+          handleChange(newEdge);
         }}
-        value={
-          edge.markerEnd && edge.markerStart ? 'both' :
-          edge.markerEnd ? 'end' :
-          edge.markerStart ? 'start' : 'none'
-        }
+        value={getArrowValue()}
       >
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Arrow Direction" />
@@ -110,50 +107,22 @@ const CustomEdge: React.FC<CustomEdgeProps> = (props) => {
     sourcePosition, 
     targetPosition, 
     style = {}, 
-    markerEnd, 
-    markerStart, 
-    animated, 
+    markerEnd,
+    markerStart,
     data,
-    type = 'default'  // Provide a default value here
+    animated
   } = props;
   
-  const getEdgePath = () => {
-    switch (type) {
-      case 'step':
-        return getBezierPath({
-          sourceX,
-          sourceY,
-          sourcePosition,
-          targetX,
-          targetY,
-          targetPosition,
-          curvature: 0,
-        });
-      case 'smoothstep':
-        return getBezierPath({
-          sourceX,
-          sourceY,
-          sourcePosition,
-          targetX,
-          targetY,
-          targetPosition,
-          curvature: 0.5,
-        });
-      default:
-        return getBezierPath({
-          sourceX,
-          sourceY,
-          sourcePosition,
-          targetX,
-          targetY,
-          targetPosition,
-        });
-    }
-  };
+  const [edgePath, labelX, labelY] = getBezierPath({
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition,
+  });
 
-  const [edgePath, labelX, labelY] = getEdgePath();
-
-  const onEdgeClick = useCallback((evt: React.MouseEvent<SVGPathElement, MouseEvent>) => {
+  const onEdgeClick = useCallback((evt: React.MouseEvent<SVGGElement, MouseEvent>) => {
     evt.preventDefault();
     evt.stopPropagation();
     setIsOpen(true);
@@ -175,15 +144,25 @@ const CustomEdge: React.FC<CustomEdgeProps> = (props) => {
 
   return (
     <>
-      <path
-        id={id}
-        style={style}
-        className={`react-flow__edge-path ${animated ? 'react-flow__edge-path-animated' : ''}`}
-        d={edgePath}
-        markerEnd={markerEnd}
-        markerStart={markerStart}
-        onClick={onEdgeClick}
-      />
+      <g onClick={onEdgeClick}>
+        {/* Invisible wider path for better click detection */}
+        <path
+          d={edgePath}
+          fill="none"
+          stroke="transparent"
+          strokeWidth={20}
+          className="react-flow__edge-interaction"
+        />
+        {/* Visible edge path */}
+        <path
+          id={id}
+          style={style}
+          className={`react-flow__edge-path ${animated ? 'react-flow__edge-path-animated' : ''}`}
+          d={edgePath}
+          markerEnd={markerEnd}
+          markerStart={markerStart}
+        />
+      </g>
       {data?.text && (
         <g transform={`translate(${(sourceX + targetX) / 2}, ${(sourceY + targetY) / 2})`}>
           <rect
