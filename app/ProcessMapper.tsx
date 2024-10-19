@@ -40,6 +40,8 @@ import CustomEdge from './CustomEdge'
 import Sidebar from './Sidebar'
 import SchemaEditor from './SchemaEditor'
 import TextNode from './TextNode'
+import FlowsModal from '@/components/FlowsModal'
+import { useUser } from '@supabase/auth-helpers-react';
 
 // const nodeTypes = {
 //   process: ProcessNode,
@@ -68,6 +70,43 @@ export default function ProcessMapper() {
   const [fontWeight, setFontWeight] = useState('normal');
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; visible: boolean }>({ x: 0, y: 0, visible: false });
+
+  const [isFlowsModalOpen, setIsFlowsModalOpen] = useState(false);
+
+  const user = useUser();
+
+  const handleManageFlows = () => {
+    setIsFlowsModalOpen(true);
+  };
+
+  const handleSaveFlow = useCallback(() => {
+    if (reactFlowInstance) {
+      const flow = reactFlowInstance.toObject()
+      return JSON.stringify(flow);
+    }
+    return '';
+  }, [reactFlowInstance]);
+
+  const handleLoadFlow = useCallback((flowData: string) => {
+    try {
+      const flow = JSON.parse(flowData);
+      if (flow.nodes && flow.edges) {
+        setNodes(flow.nodes);
+        setEdges(flow.edges);
+        toast({
+          title: "Success",
+          description: "Flow loaded successfully.",
+        });
+      }
+    } catch (error) {
+      console.error('Error loading flow:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load flow.",
+        variant: "destructive",
+      });
+    }
+  }, [setNodes, setEdges, toast]);
 
   const onConnect = useCallback((params: Connection) => {
     // Ensure that source and target are strings
@@ -415,6 +454,8 @@ export default function ProcessMapper() {
           importData={importData}
           toggleDeleteMode={toggleDeleteMode}
           isDeleteMode={isDeleteMode}
+          onManageFlows={handleManageFlows}
+          user={user}  // Pass the user object to Sidebar
         />
         <div className="flex-grow" ref={reactFlowWrapper}>
           <ReactFlow
@@ -569,6 +610,12 @@ export default function ProcessMapper() {
           </div>
         </DialogContent>
       </Dialog>
+      <FlowsModal
+        isOpen={isFlowsModalOpen}
+        onClose={() => setIsFlowsModalOpen(false)}
+        onSaveFlow={handleSaveFlow}
+        onLoadFlow={handleLoadFlow}
+      />
     </div>
   )
 }

@@ -101,9 +101,20 @@ export default function AuthModal() {
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
           {session ? (
-            <Button variant="outline" onClick={handleSignOut} className="fixed top-4 right-4 z-50">Sign Out</Button>
+            <Button 
+              variant="ghost" 
+              onClick={handleSignOut} 
+              className="fixed top-4 right-4 z-50 "
+            >
+              Sign Out
+            </Button>
           ) : (
-            <Button variant="outline" className="fixed top-4 right-4 z-50">Sign In</Button>
+            <Button 
+              variant="outline" 
+              className="fixed top-4 right-4 z-50"
+            >
+              Sign In
+            </Button>
           )}
         </DialogTrigger>
         {!session && (

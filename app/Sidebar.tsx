@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
-import { Database, FileSpreadsheet, Layout, Share2, FileJson, Image, FileText, Trash2, Upload, Type } from 'lucide-react'
+import { Database, FileSpreadsheet, Layout, Share2, FileJson, Image, FileText, Trash2, Upload, Type, Save } from 'lucide-react'
+import { User } from '@supabase/supabase-js';
 
 interface SidebarProps {
   exportToPng: () => void;
@@ -8,6 +9,8 @@ interface SidebarProps {
   importData: (file: File) => void;
   toggleDeleteMode: () => void;
   isDeleteMode: boolean;
+  onManageFlows: () => void;
+  user: User | null;
 }
 
 const nodeTypes = [
@@ -18,7 +21,7 @@ const nodeTypes = [
   { type: 'text', icon: Type, label: 'Text Annotation' },
 ]
 
-export default function Sidebar({ exportToPng, exportToJson, exportToTxt, importData, toggleDeleteMode, isDeleteMode }: SidebarProps) {
+export default function Sidebar({ exportToPng, exportToJson, exportToTxt, importData, toggleDeleteMode, isDeleteMode, onManageFlows, user }: SidebarProps) {
   const onDragStart = (event: React.DragEvent<HTMLDivElement>, nodeType: string) => {
     event.dataTransfer.setData('application/reactflow', nodeType)
     event.dataTransfer.effectAllowed = 'move'
@@ -52,6 +55,12 @@ export default function Sidebar({ exportToPng, exportToJson, exportToTxt, import
       <div className="mt-auto">
         <h2 className="text-lg font-semibold mb-4">Import/Export Options</h2>
         <div className="space-y-2">
+          {user && (
+            <Button onClick={onManageFlows} className="w-full justify-start">
+              <Save className="w-4 h-4 mr-2" />
+              Manage Flows
+            </Button>
+          )}
           <Button onClick={() => document.getElementById('file-upload')?.click()} className="w-full justify-start">
             <Upload className="w-4 h-4 mr-2" />
             Import Previous Model
