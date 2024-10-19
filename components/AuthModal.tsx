@@ -110,7 +110,7 @@ export default function AuthModal() {
             </Button>
           ) : (
             <Button 
-              variant="outline" 
+              variant="ghost" 
               className="fixed top-4 right-4 z-50"
             >
               Sign In
