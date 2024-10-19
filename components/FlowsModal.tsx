@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from '@/lib/supabaseClient';
 import { useToast } from "@/components/ui/use-toast";
-import { useUser } from '@supabase/auth-helpers-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from 'lucide-react';
+import { User } from '@supabase/supabase-js';
 
 interface Flow {
   id: string;
@@ -20,13 +20,13 @@ interface FlowsModalProps {
   onClose: () => void;
   onLoadFlow: (flowData: string) => void;
   onSaveFlow: () => string;
+  user: User | null;
 }
 
-const FlowsModal: React.FC<FlowsModalProps> = ({ isOpen, onClose, onLoadFlow, onSaveFlow }) => {
+const FlowsModal: React.FC<FlowsModalProps> = ({ isOpen, onClose, onLoadFlow, onSaveFlow, user }) => {
   const [flows, setFlows] = useState<Flow[]>([]);
   const [newFlowName, setNewFlowName] = useState('');
   const { toast } = useToast();
-  const user = useUser();
 
   const fetchFlows = useCallback(async () => {
     if (!user) return;
@@ -75,7 +75,6 @@ const FlowsModal: React.FC<FlowsModalProps> = ({ isOpen, onClose, onLoadFlow, on
     }
 
     const flowData = onSaveFlow();
-    console.log('Flow data to be saved:', flowData);
 
     try {
       let result;
@@ -91,7 +90,7 @@ const FlowsModal: React.FC<FlowsModalProps> = ({ isOpen, onClose, onLoadFlow, on
           .insert([{ 
             name: newFlowName, 
             data: flowData,
-            user_id: user.id
+            user_id: user.id  // Make sure to include the user_id
           }]);
       }
 

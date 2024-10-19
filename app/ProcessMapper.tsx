@@ -617,6 +617,7 @@ export default function ProcessMapper({ user }: ProcessMapperProps) {
         onClose={() => setIsFlowsModalOpen(false)}
         onSaveFlow={handleSaveFlow}
         onLoadFlow={handleLoadFlow}
+        user={user}  // Pass the user object to FlowsModal
       />
     </div>
   )
