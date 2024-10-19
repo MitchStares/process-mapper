@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
+import { User } from '@supabase/supabase-js';
 import ReactFlow, {
   MiniMap,
   Controls,
@@ -41,7 +42,6 @@ import Sidebar from './Sidebar'
 import SchemaEditor from './SchemaEditor'
 import TextNode from './TextNode'
 import FlowsModal from '@/components/FlowsModal'
-import { useUser } from '@supabase/auth-helpers-react';
 
 // const nodeTypes = {
 //   process: ProcessNode,
@@ -55,7 +55,11 @@ const edgeTypes = {
   custom: CustomEdge,
 };
 
-export default function ProcessMapper() {
+interface ProcessMapperProps {
+  user: User | null
+}
+
+export default function ProcessMapper({ user }: ProcessMapperProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [selectedNode, setSelectedNode] = useState<Node | null>(null)
@@ -72,8 +76,6 @@ export default function ProcessMapper() {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; visible: boolean }>({ x: 0, y: 0, visible: false });
 
   const [isFlowsModalOpen, setIsFlowsModalOpen] = useState(false);
-
-  const user = useUser();
 
   const handleManageFlows = () => {
     setIsFlowsModalOpen(true);
@@ -455,7 +457,7 @@ export default function ProcessMapper() {
           toggleDeleteMode={toggleDeleteMode}
           isDeleteMode={isDeleteMode}
           onManageFlows={handleManageFlows}
-          user={user}  // Pass the user object to Sidebar
+          user={user}
         />
         <div className="flex-grow" ref={reactFlowWrapper}>
           <ReactFlow

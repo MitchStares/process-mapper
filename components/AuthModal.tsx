@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -23,20 +23,25 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { supabase } from '../lib/supabaseClient'
-import { Session } from '@supabase/supabase-js'
+import { User } from '@supabase/supabase-js'
 import toast, { Toaster } from 'react-hot-toast'
+import { useSupabaseClient } from '@supabase/auth-helpers-react'
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
 })
 
-export default function AuthModal() {
+interface AuthModalProps {
+  user: User | null
+  setUser: (user: User | null) => void
+}
+
+export default function AuthModal({ user, setUser }: AuthModalProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
   const [loading, setLoading] = useState(false)
-  const [session, setSession] = useState<Session | null>(null)
+  const supabase = useSupabaseClient()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -46,25 +51,16 @@ export default function AuthModal() {
     },
   })
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-    })
-
-    supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    })
-  }, [])
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true)
     try {
       if (authMode === 'signin') {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email: values.email,
           password: values.password,
         })
         if (error) throw error
+        setUser(data.user)
         toast.success('Signed in successfully')
       } else {
         const { error } = await supabase.auth.signUp({
@@ -91,6 +87,7 @@ export default function AuthModal() {
     if (error) {
       toast.error('Error signing out')
     } else {
+      setUser(null)
       toast.success('Signed out successfully')
     }
   }
@@ -100,7 +97,7 @@ export default function AuthModal() {
       <Toaster position="top-right" />
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
-          {session ? (
+          {user ? (
             <Button 
               variant="ghost" 
               onClick={handleSignOut} 
@@ -117,7 +114,7 @@ export default function AuthModal() {
             </Button>
           )}
         </DialogTrigger>
-        {!session && (
+        {!user && (
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>{authMode === 'signin' ? 'Sign In' : 'Sign Up'}</DialogTitle>

@@ -38,7 +38,7 @@ const LoadFlow = () => {
 
   if (loading) return <div>Loading...</div>;
 
-  return <ProcessMapper />;
+  return <ProcessMapper user={null} />;
 };
 
 export default LoadFlow;
