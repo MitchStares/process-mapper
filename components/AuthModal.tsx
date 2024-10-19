@@ -26,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { User } from '@supabase/supabase-js'
 import toast, { Toaster } from 'react-hot-toast'
 import { useSupabaseClient } from '@supabase/auth-helpers-react'
+import { Github } from 'lucide-react'
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
@@ -89,6 +90,24 @@ export default function AuthModal({ user, setUser }: AuthModalProps) {
     } else {
       setUser(null)
       toast.success('Signed out successfully')
+    }
+  }
+
+  const handleGitHubSignIn = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      })
+      if (error) throw error
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error.message)
+      } else {
+        toast.error('An unexpected error occurred')
+      }
     }
   }
 
@@ -163,6 +182,12 @@ export default function AuthModal({ user, setUser }: AuthModalProps) {
                     </Button>
                   </form>
                 </Form>
+                <div className="mt-4">
+                  <Button onClick={handleGitHubSignIn} className="w-full" variant="outline">
+                    <Github className="mr-2 h-4 w-4" />
+                    Sign in with GitHub
+                  </Button>
+                </div>
               </TabsContent>
               <TabsContent value="signup">
                 <Form {...form}>
@@ -198,6 +223,12 @@ export default function AuthModal({ user, setUser }: AuthModalProps) {
                     </Button>
                   </form>
                 </Form>
+                <div className="mt-4">
+                  <Button onClick={handleGitHubSignIn} className="w-full" variant="outline">
+                    <Github className="mr-2 h-4 w-4" />
+                    Sign up with GitHub
+                  </Button>
+                </div>
               </TabsContent>
             </Tabs>
           </DialogContent>
