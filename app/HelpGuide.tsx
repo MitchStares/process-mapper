@@ -17,7 +17,7 @@ export default function HelpGuide() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="fixed top-4 right-4 z-50">
+        <Button variant="ghost" size="icon" className="fixed top-4 right-28 z-50">
           <HelpCircle className="h-6 w-6" />
           <span className="sr-only">Open help guide</span>
         </Button>
