@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { supabase } from '@/lib/supabaseClient';
 import { useToast } from "@/components/ui/use-toast";
 import { useUser } from '@supabase/auth-helpers-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { MoreHorizontal } from 'lucide-react';
 
 interface Flow {
   id: string;
@@ -53,7 +55,7 @@ const FlowsModal: React.FC<FlowsModalProps> = ({ isOpen, onClose, onLoadFlow, on
     }
   }, [isOpen, user, fetchFlows]);
 
-  const handleSaveFlow = async () => {
+  const handleSaveFlow = async (existingFlowId?: string) => {
     if (!user) {
       toast({
         title: "Error",
@@ -63,7 +65,7 @@ const FlowsModal: React.FC<FlowsModalProps> = ({ isOpen, onClose, onLoadFlow, on
       return;
     }
 
-    if (!newFlowName.trim()) {
+    if (!newFlowName.trim() && !existingFlowId) {
       toast({
         title: "Error",
         description: "Please enter a name for your flow.",
@@ -73,37 +75,72 @@ const FlowsModal: React.FC<FlowsModalProps> = ({ isOpen, onClose, onLoadFlow, on
     }
 
     const flowData = onSaveFlow();
-    console.log('Flow data to be saved:', flowData); // Log the flow data
+    console.log('Flow data to be saved:', flowData);
 
-    const { data, error } = await supabase
-      .from('flows')
-      .insert([{ 
-        name: newFlowName, 
-        data: flowData,
-        user_id: user.id
-      }]);
+    try {
+      let result;
+      if (existingFlowId) {
+        result = await supabase
+          .from('flows')
+          .update({ data: flowData })
+          .eq('id', existingFlowId)
+          .eq('user_id', user.id);
+      } else {
+        result = await supabase
+          .from('flows')
+          .insert([{ 
+            name: newFlowName, 
+            data: flowData,
+            user_id: user.id
+          }]);
+      }
 
-    if (error) {
+      if (result.error) throw result.error;
+
+      toast({
+        title: "Success",
+        description: existingFlowId ? "Flow updated successfully." : "Flow saved successfully.",
+      });
+      setNewFlowName('');
+      fetchFlows();
+    } catch (error) {
       console.error('Error saving flow:', error);
       toast({
         title: "Error",
         description: "Failed to save flow.",
         variant: "destructive",
       });
-    } else {
-      console.log('Flow saved successfully:', data);
-      toast({
-        title: "Success",
-        description: "Flow saved successfully.",
-      });
-      setNewFlowName('');
-      fetchFlows();
     }
   };
 
   const handleLoadFlow = (flow: Flow) => {
     onLoadFlow(flow.data);
     onClose();
+  };
+
+  const handleDeleteFlow = async (flowId: string) => {
+    try {
+      const { error } = await supabase
+        .from('flows')
+        .delete()
+        .eq('id', flowId)
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Flow deleted successfully.",
+      });
+      fetchFlows();
+    } catch (error) {
+      console.error('Error deleting flow:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete flow.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -119,13 +156,31 @@ const FlowsModal: React.FC<FlowsModalProps> = ({ isOpen, onClose, onLoadFlow, on
               onChange={(e) => setNewFlowName(e.target.value)}
               placeholder="Enter flow name"
             />
-            <Button onClick={handleSaveFlow}>Save Current Flow</Button>
+            <Button onClick={() => handleSaveFlow()}>Save New Flow</Button>
           </div>
           <div className="space-y-2">
             {flows.map((flow) => (
               <div key={flow.id} className="flex justify-between items-center">
                 <span>{flow.name}</span>
-                <Button onClick={() => handleLoadFlow(flow)}>Load</Button>
+                <div className="flex items-center space-x-2">
+                  <Button onClick={() => handleLoadFlow(flow)}>Load</Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Open menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleSaveFlow(flow.id)}>
+                        Update
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDeleteFlow(flow.id)}>
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             ))}
           </div>
