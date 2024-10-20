@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { supabase } from '@/lib/supabaseClient';
+import { User, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { useToast } from "@/components/ui/use-toast";
 import { useUser } from '@supabase/auth-helpers-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -23,18 +23,24 @@ interface FlowsModalProps {
 }
 
 const FlowsModal: React.FC<FlowsModalProps> = ({ isOpen, onClose, onLoadFlow, onSaveFlow }) => {
+  const supabase = useSupabaseClient();
   const [flows, setFlows] = useState<Flow[]>([]);
   const [newFlowName, setNewFlowName] = useState('');
   const { toast } = useToast();
   const user = useUser();
 
-  const fetchFlows = useCallback(async () => {
-    if (!user) return;
+  const fetchFlows = useCallback(async (currentUser: User | null) => {
+    // console.log('Fetching flows...');
+    // console.log('Current user:', currentUser);
+    if (!currentUser) {
+      // console.log('No user found, cannot fetch flows');
+      return;
+    }
 
     const { data, error } = await supabase
       .from('flows')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', currentUser.id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -45,13 +51,14 @@ const FlowsModal: React.FC<FlowsModalProps> = ({ isOpen, onClose, onLoadFlow, on
         variant: "destructive",
       });
     } else {
+      // console.log('Fetched flows:', data);
       setFlows(data || []);
     }
-  }, [user, toast]);
+  }, [supabase, toast]);
 
   useEffect(() => {
     if (isOpen && user) {
-      fetchFlows();
+      fetchFlows(user);
     }
   }, [isOpen, user, fetchFlows]);
 
@@ -75,7 +82,7 @@ const FlowsModal: React.FC<FlowsModalProps> = ({ isOpen, onClose, onLoadFlow, on
     }
 
     const flowData = onSaveFlow();
-    console.log('Flow data to be saved:', flowData);
+    // console.log('Flow data to be saved:', flowData);
 
     try {
       let result;
@@ -102,7 +109,7 @@ const FlowsModal: React.FC<FlowsModalProps> = ({ isOpen, onClose, onLoadFlow, on
         description: existingFlowId ? "Flow updated successfully." : "Flow saved successfully.",
       });
       setNewFlowName('');
-      fetchFlows();
+      fetchFlows(user);
     } catch (error) {
       console.error('Error saving flow:', error);
       toast({
@@ -132,7 +139,7 @@ const FlowsModal: React.FC<FlowsModalProps> = ({ isOpen, onClose, onLoadFlow, on
         title: "Success",
         description: "Flow deleted successfully.",
       });
-      fetchFlows();
+      fetchFlows(user);
     } catch (error) {
       console.error('Error deleting flow:', error);
       toast({
