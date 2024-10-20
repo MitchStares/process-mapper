@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { User, useSupabaseClient } from '@supabase/auth-helpers-react';
@@ -28,18 +28,16 @@ const FlowsModal: React.FC<FlowsModalProps> = ({ isOpen, onClose, onLoadFlow, on
   const [newFlowName, setNewFlowName] = useState('');
   const { toast } = useToast();
   const user = useUser();
+  const [flowCount, setFlowCount] = useState<number | null>(null);
 
   const fetchFlows = useCallback(async (currentUser: User | null) => {
-    // console.log('Fetching flows...');
-    // console.log('Current user:', currentUser);
     if (!currentUser) {
-      // console.log('No user found, cannot fetch flows');
       return;
     }
 
-    const { data, error } = await supabase
+    const { data, error, count } = await supabase
       .from('flows')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('user_id', currentUser.id)
       .order('created_at', { ascending: false });
 
@@ -51,8 +49,8 @@ const FlowsModal: React.FC<FlowsModalProps> = ({ isOpen, onClose, onLoadFlow, on
         variant: "destructive",
       });
     } else {
-      // console.log('Fetched flows:', data);
       setFlows(data || []);
+      setFlowCount(count);
     }
   }, [supabase, toast]);
 
@@ -81,10 +79,26 @@ const FlowsModal: React.FC<FlowsModalProps> = ({ isOpen, onClose, onLoadFlow, on
       return;
     }
 
-    const flowData = onSaveFlow();
-    // console.log('Flow data to be saved:', flowData);
-
     try {
+      // Check the number of flows the user has
+      const { count, error: countError } = await supabase
+        .from('flows')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      if (countError) throw countError;
+
+      if (count !== null && count >= 5 && !existingFlowId) {
+        toast({
+          title: "Error",
+          description: "You have reached the maximum limit of 5 flows. Please delete an existing flow before creating a new one.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const flowData = onSaveFlow();
+
       let result;
       if (existingFlowId) {
         result = await supabase
@@ -155,6 +169,9 @@ const FlowsModal: React.FC<FlowsModalProps> = ({ isOpen, onClose, onLoadFlow, on
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Your Flows</DialogTitle>
+          <DialogDescription>
+            You have saved {flowCount} out of 5 allowed flows.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="flex space-x-2">
