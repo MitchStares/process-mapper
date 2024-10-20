@@ -1,9 +1,9 @@
 "use client"
 
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
+// import { useForm } from 'react-hook-form'
+// import { zodResolver } from '@hookform/resolvers/zod'
+// import * as z from 'zod'
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -13,24 +13,25 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
+// import {
+//   Form,
+//   FormControl,
+//   FormField,
+//   FormItem,
+//   FormLabel,
+//   FormMessage,
+// } from "@/components/ui/form"
+// import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { User } from '@supabase/supabase-js'
 import toast, { Toaster } from 'react-hot-toast'
 import { useSupabaseClient } from '@supabase/auth-helpers-react'
+import { Github } from 'lucide-react'
 
-const formSchema = z.object({
-  email: z.string().email({ message: "Invalid email address" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-})
+// const formSchema = z.object({
+//   email: z.string().email({ message: "Invalid email address" }),
+//   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+// })
 
 interface AuthModalProps {
   user: User | null
@@ -40,47 +41,47 @@ interface AuthModalProps {
 export default function AuthModal({ user, setUser }: AuthModalProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
-  const [loading, setLoading] = useState(false)
+  // const [loading, setLoading] = useState(false)
   const supabase = useSupabaseClient()
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  })
+  // const form = useForm<z.infer<typeof formSchema>>({
+  //   resolver: zodResolver(formSchema),
+  //   defaultValues: {
+  //     email: "",
+  //     password: "",
+  //   },
+  // })
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    setLoading(true)
-    try {
-      if (authMode === 'signin') {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: values.email,
-          password: values.password,
-        })
-        if (error) throw error
-        setUser(data.user)
-        toast.success('Signed in successfully')
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email: values.email,
-          password: values.password,
-        })
-        if (error) throw error
-        toast.success('Check your email for the confirmation link!')
-      }
-      setIsOpen(false)
-    } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message)
-      } else {
-        toast.error('An unexpected error occurred')
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
+  // async function onSubmit(values: z.infer<typeof formSchema>) {
+  //   setLoading(true)
+  //   try {
+  //     if (authMode === 'signin') {
+  //       const { data, error } = await supabase.auth.signInWithPassword({
+  //         email: values.email,
+  //         password: values.password,
+  //       })
+  //       if (error) throw error
+  //       setUser(data.user)
+  //       toast.success('Signed in successfully')
+  //     } else {
+  //       const { error } = await supabase.auth.signUp({
+  //         email: values.email,
+  //         password: values.password,
+  //       })
+  //       if (error) throw error
+  //       toast.success('Check your email for the confirmation link!')
+  //     }
+  //     setIsOpen(false)
+  //   } catch (error) {
+  //     if (error instanceof Error) {
+  //       toast.error(error.message)
+  //     } else {
+  //       toast.error('An unexpected error occurred')
+  //     }
+  //   } finally {
+  //     setLoading(false)
+  //   }
+  // }
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut()
@@ -91,6 +92,25 @@ export default function AuthModal({ user, setUser }: AuthModalProps) {
       toast.success('Signed out successfully')
     }
   }
+
+  const handleGitHubSignIn = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
+        }
+      })
+      if (error) throw error
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error.message)
+      } else {
+        toast.error('An unexpected error occurred')
+      }
+    }
+  }
+
 
   return (
     <>
@@ -130,9 +150,9 @@ export default function AuthModal({ user, setUser }: AuthModalProps) {
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
               </TabsList>
               <TabsContent value="signin">
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                    <FormField
+                {/* <Form {...form}> */}
+                  {/* <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8"> */}
+                    {/* <FormField
                       control={form.control}
                       name="email"
                       render={({ field }) => (
@@ -157,15 +177,21 @@ export default function AuthModal({ user, setUser }: AuthModalProps) {
                           <FormMessage />
                         </FormItem>
                       )}
-                    />
-                    <Button type="submit" className="w-full" disabled={loading}>
+                    /> */}
+                    {/* <Button type="submit" className="w-full" disabled={loading}>
                       {loading ? 'Loading...' : 'Sign In'}
                     </Button>
-                  </form>
-                </Form>
+                  </form> */}
+                {/* </Form> */}
+                <div className="mt-4">
+                  <Button onClick={handleGitHubSignIn} className="w-full" type="submit" >
+                    <Github className="mr-2 h-4 w-4" />
+                    Sign in with GitHub
+                  </Button>
+                </div>
               </TabsContent>
               <TabsContent value="signup">
-                <Form {...form}>
+                {/* <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                     <FormField
                       control={form.control}
@@ -197,7 +223,13 @@ export default function AuthModal({ user, setUser }: AuthModalProps) {
                       {loading ? 'Loading...' : 'Sign Up'}
                     </Button>
                   </form>
-                </Form>
+                </Form> */}
+                <div className="mt-4">
+                  <Button onClick={handleGitHubSignIn} className="w-full" type='submit'>
+                    <Github className="mr-2 h-4 w-4" />
+                    Sign up with GitHub
+                  </Button>
+                </div>
               </TabsContent>
             </Tabs>
           </DialogContent>
