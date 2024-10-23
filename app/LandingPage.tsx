@@ -97,29 +97,29 @@ export default function LandingPage({ user, setUser, onCallToAction }: LandingPa
                     </svg>
                   ),
                 },
-                {
-                  title: "Collaboration Tools",
-                  description: "Collaborate in real-time with your team for maximum efficiency.",
-                  icon: (
-                    <svg
-                      className=" h-10 w-10 mb-4"
-                      fill="none"
-                      height="24"
-                      stroke="currentColor"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                      width="24"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                      <circle cx="9" cy="7" r="4" />
-                      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                    </svg>
-                  ),
-                },
+                // {
+                //   title: "Collaboration Tools",
+                //   description: "Collaborate in real-time with your team for maximum efficiency.",
+                //   icon: (
+                //     <svg
+                //       className=" h-10 w-10 mb-4"
+                //       fill="none"
+                //       height="24"
+                //       stroke="currentColor"
+                //       strokeLinecap="round"
+                //       strokeLinejoin="round"
+                //       strokeWidth="2"
+                //       viewBox="0 0 24 24"
+                //       width="24"
+                //       xmlns="http://www.w3.org/2000/svg"
+                //     >
+                //       <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                //       <circle cx="9" cy="7" r="4" />
+                //       <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                //       <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                //     </svg>
+                //   ),
+                // },
                 {
                   title: "Export Options",
                   description: "Easily export your maps and data in multiple formats.",
@@ -139,6 +139,26 @@ export default function LandingPage({ user, setUser, onCallToAction }: LandingPa
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                       <polyline points="17 8 12 3 7 8" />
                       <line x1="12" x2="12" y1="3" y2="15" />
+                    </svg>
+                  ),
+                },
+                {
+                  title: "Cloud Saving",
+                  description: "Save & restore quickly from a cloud database.",
+                  icon: (
+                    <svg
+                      className="h-10 w-10 mb-4"
+                      fill="none"
+                      height="24"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                      width="24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
                     </svg>
                   ),
                 },
