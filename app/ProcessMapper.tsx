@@ -14,12 +14,18 @@ import ReactFlow, {
   Node,
   useReactFlow,
   ReactFlowInstance,
-  MarkerType,
   NodeMouseHandler,
   EdgeMouseHandler,
+  XYPosition,
+  applyNodeChanges,
+  applyEdgeChanges,
+  NodeChange,
+  EdgeChange,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { toPng } from 'html-to-image'
+import { useHotkeys } from 'react-hotkeys-hook'
+import debounce from 'lodash/debounce'  // Add this import
 
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -42,6 +48,7 @@ import Sidebar from './Sidebar'
 import SchemaEditor from './SchemaEditor'
 import TextNode from './TextNode'
 import FlowsModal from '@/components/FlowsModal'
+import ContextMenu from './ContextMenu'
 
 // const nodeTypes = {
 //   process: ProcessNode,
@@ -60,8 +67,8 @@ interface ProcessMapperProps {
 }
 
 export default function ProcessMapper({ user }: ProcessMapperProps) {
-  const [nodes, setNodes, onNodesChange] = useNodesState([])
-  const [edges, setEdges, onEdgesChange] = useEdgesState([])
+  const [nodes, setNodes] = useNodesState([])
+  const [edges, setEdges] = useEdgesState([])
   const [selectedNode, setSelectedNode] = useState<Node | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isDeleteMode, setIsDeleteMode] = useState(false)
@@ -73,9 +80,14 @@ export default function ProcessMapper({ user }: ProcessMapperProps) {
   const [fontSize, setFontSize] = useState('16px');
   const [fontWeight, setFontWeight] = useState('normal');
 
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; visible: boolean }>({ x: 0, y: 0, visible: false });
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; visible: boolean; type: 'node' | 'canvas' | 'edge' | null }>({ x: 0, y: 0, visible: false, type: null });
 
   const [isFlowsModalOpen, setIsFlowsModalOpen] = useState(false);
+
+  const [clipboard, setClipboard] = useState<{ nodes: Node[], edges: Edge[] } | null>(null)
+  const [history, setHistory] = useState<{ nodes: Node[], edges: Edge[] }[]>([])
+  const [historyIndex, setHistoryIndex] = useState(-1)
+  const [mousePosition, setMousePosition] = useState<XYPosition>({ x: 0, y: 0 })
 
   const handleManageFlows = () => {
     setIsFlowsModalOpen(true);
@@ -110,24 +122,42 @@ export default function ProcessMapper({ user }: ProcessMapperProps) {
     }
   }, [setNodes, setEdges, toast]);
 
+  const addToHistory = useCallback(() => {
+    setHistory(prev => {
+      const newHistory = [...prev.slice(0, historyIndex + 1), { nodes, edges }];
+      if (newHistory.length > 50) {
+        newHistory.shift();
+      }
+      return newHistory;
+    });
+    setHistoryIndex(prev => Math.min(prev + 1, 49));
+  }, [nodes, edges, historyIndex]);
+
+  const debouncedAddToHistory = useMemo(
+    () => debounce(addToHistory, 500),
+    [addToHistory]
+  );
+
   const onConnect = useCallback((params: Connection) => {
-    // Ensure that source and target are strings
-    if (params.source && params.target) {
-      const newEdge: Edge = {
-        id: `e${params.source}-${params.target}`,
-        source: params.source,
-        target: params.target,
-        sourceHandle: params.sourceHandle,
-        targetHandle: params.targetHandle,
-        type: 'custom', // This ensures all edges use our CustomEdge component
-        animated: true, // Set animated to true by default
-        style: { stroke: '#999', strokeWidth: 2 },
-        markerEnd: { type: MarkerType.ArrowClosed },
-        data: { text: '' },
-      };
-      setEdges((eds) => addEdge(newEdge, eds));
+    setEdges((eds) => addEdge(params, eds));
+    addToHistory();
+  }, [setEdges, addToHistory]);
+
+  const onNodesChange = useCallback((changes: NodeChange[]) => {
+    setNodes((nds) => applyNodeChanges(changes, nds));
+    
+    // Only debounce history addition for position changes
+    if (changes.some(change => change.type === 'position')) {
+      debouncedAddToHistory();
+    } else {
+      addToHistory();
     }
-  }, [setEdges]);
+  }, [setNodes, addToHistory, debouncedAddToHistory]);
+
+  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
+    setEdges((eds) => applyEdgeChanges(changes, eds));
+    addToHistory();
+  }, [setEdges, addToHistory]);
 
   const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault()
@@ -199,14 +229,16 @@ export default function ProcessMapper({ user }: ProcessMapperProps) {
     if (isDeleteMode) {
       setNodes((nds) => nds.filter((n) => n.id !== node.id))
       setEdges((eds) => eds.filter((e) => e.source !== node.id && e.target !== node.id))
+      addToHistory()
     } else {
       setSelectedNode(node)
     }
-  }, [isDeleteMode, setNodes, setEdges])
+  }, [isDeleteMode, setNodes, setEdges, addToHistory])
 
   const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
     if (isDeleteMode) {
       setEdges((eds) => eds.filter((e) => e.id !== edge.id))
+      addToHistory()
     } else {
       // Toggle edge selection
       setEdges((eds) => 
@@ -214,8 +246,9 @@ export default function ProcessMapper({ user }: ProcessMapperProps) {
           e.id === edge.id ? { ...e, selected: !e.selected } : { ...e, selected: false }
         )
       );
+      addToHistory()
     }
-  }, [isDeleteMode, setEdges])
+  }, [isDeleteMode, setEdges, addToHistory])
 
   const onNodeDoubleClick = useCallback((event: React.MouseEvent, node: Node) => {
     if (node.type !== 'text') {
@@ -225,9 +258,9 @@ export default function ProcessMapper({ user }: ProcessMapperProps) {
     }
   }, []);
 
-  const onPaneClick = useCallback(() => {
+  const handlePaneClick = useCallback(() => {
     setSelectedNode(null);
-    setContextMenu({ x: 0, y: 0, visible: false });
+    setContextMenu({ x: 0, y: 0, visible: false, type: null });
   }, []);
 
   const onKeyDown = useCallback((event: KeyboardEvent) => {
@@ -409,23 +442,83 @@ export default function ProcessMapper({ user }: ProcessMapperProps) {
     setIsDeleteMode((prev) => !prev);
   }, []);
 
-  const onNodeContextMenu: NodeMouseHandler = useCallback(
-    (event, node) => {
-      event.preventDefault();
-      setSelectedNode(node);
-      setContextMenu({ x: event.clientX, y: event.clientY, visible: true });
-    },
-    [setSelectedNode]
-  );
+  const undo = useCallback(() => {
+    if (historyIndex > 0) {
+      const prevState = history[historyIndex - 1];
+      setNodes(prevState.nodes);
+      setEdges(prevState.edges);
+      setHistoryIndex(prev => prev - 1);
+      toast({ title: "Undo", description: "Last action undone" });
+    }
+  }, [history, historyIndex, setNodes, setEdges, toast]);
 
-  const onEdgeContextMenu: EdgeMouseHandler = useCallback(
-    (event, edge) => {
-      event.preventDefault();
-      setEdges((eds) => eds.map((e) => ({...e, selected: e.id === edge.id})));
-      setContextMenu({ x: event.clientX, y: event.clientY, visible: true });
-    },
-    [setEdges]
-  );
+  const redo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      const nextState = history[historyIndex + 1]
+      setNodes(nextState.nodes)
+      setEdges(nextState.edges)
+      setHistoryIndex(prev => prev + 1)
+      toast({ title: "Redo", description: "Action redone" })
+    }
+  }, [history, historyIndex, setNodes, setEdges, toast])
+
+  const cut = useCallback(() => {
+    const selectedNodes = nodes.filter(node => node.selected)
+    const selectedEdges = edges.filter(edge => edge.selected)
+    setClipboard({ nodes: selectedNodes, edges: selectedEdges })
+    setNodes(nodes => nodes.filter(node => !node.selected))
+    setEdges(edges => edges.filter(edge => !edge.selected))
+    addToHistory()
+    toast({ title: "Cut", description: `${selectedNodes.length} nodes and ${selectedEdges.length} edges cut` })
+  }, [nodes, edges, setNodes, setEdges, addToHistory, toast])
+
+  const copy = useCallback(() => {
+    const selectedNodes = nodes.filter(node => node.selected)
+    const selectedEdges = edges.filter(edge => edge.selected)
+    setClipboard({ nodes: selectedNodes, edges: selectedEdges })
+    toast({ title: "Copy", description: `${selectedNodes.length} nodes and ${selectedEdges.length} edges copied` })
+  }, [nodes, edges, toast])
+
+  const closeContextMenu = useCallback(() => {
+    setContextMenu(prev => ({ ...prev, visible: false, type: null }));
+  }, []);
+
+  const paste = useCallback(() => {
+    if (clipboard) {
+      const pastePosition = contextMenu.visible ? project({ x: contextMenu.x, y: contextMenu.y }) : mousePosition;
+      const minX = Math.min(...clipboard.nodes.map(node => node.position.x));
+      const minY = Math.min(...clipboard.nodes.map(node => node.position.y));
+      
+      const newNodes = clipboard.nodes.map(node => {
+        const offsetX = node.position.x - minX;
+        const offsetY = node.position.y - minY;
+        return {
+          ...node,
+          id: `${node.id}-copy-${Date.now()}`,
+          position: { 
+            x: pastePosition.x + offsetX, 
+            y: pastePosition.y + offsetY 
+          },
+          selected: false,
+        }
+      })
+      const newEdges = clipboard.edges.map(edge => ({
+        ...edge,
+        id: `${edge.id}-copy-${Date.now()}`,
+        source: `${edge.source}-copy-${Date.now()}`,
+        target: `${edge.target}-copy-${Date.now()}`,
+        selected: false,
+      }))
+      setNodes(nodes => [...nodes, ...newNodes])
+      setEdges(edges => [...edges, ...newEdges])
+      addToHistory()
+      toast({
+        title: "Paste",
+        description: `${newNodes.length} nodes and ${newEdges.length} edges pasted`,
+      })
+    }
+    closeContextMenu();
+  }, [clipboard, setNodes, setEdges, addToHistory, toast, mousePosition, contextMenu, closeContextMenu, project])
 
   const duplicateNode = useCallback(() => {
     if (selectedNode) {
@@ -446,6 +539,108 @@ export default function ProcessMapper({ user }: ProcessMapperProps) {
     setEdges((eds) => eds.filter((edge) => !edge.selected));
   }, [setNodes, setEdges]);
 
+  const handleContextMenuAction = useCallback((action: 'copy' | 'cut' | 'paste' | 'duplicate' | 'delete') => {
+    switch (action) {
+      case 'copy':
+        copy();
+        break;
+      case 'cut':
+        cut();
+        break;
+      case 'paste':
+        paste();
+        break;
+      case 'duplicate':
+        duplicateNode();
+        break;
+      case 'delete':
+        deleteSelectedElements();
+        break;
+    }
+    closeContextMenu();
+  }, [copy, cut, paste, duplicateNode, deleteSelectedElements, closeContextMenu]);
+
+  const onNodeContextMenu: NodeMouseHandler = useCallback(
+    (event, node) => {
+      event.preventDefault();
+      const { top, left } = reactFlowWrapper.current!.getBoundingClientRect();
+      setSelectedNode(node);
+      setContextMenu({ 
+        x: event.clientX - left, 
+        y: event.clientY - top, 
+        visible: true,
+        type: 'node'
+      });
+    },
+    [setSelectedNode]
+  );
+
+  const onEdgeContextMenu: EdgeMouseHandler = useCallback(
+    (event, edge) => {
+      event.preventDefault();
+      const { top, left } = reactFlowWrapper.current!.getBoundingClientRect();
+      setEdges((eds) => eds.map((e) => ({...e, selected: e.id === edge.id})));
+      setContextMenu({ 
+        x: event.clientX - left, 
+        y: event.clientY - top, 
+        visible: true,
+        type: 'edge'
+      });
+    },
+    [setEdges]
+  );
+
+  const onPaneContextMenu = useCallback(
+    (event: React.MouseEvent) => {
+      event.preventDefault();
+      const { top, left } = reactFlowWrapper.current!.getBoundingClientRect();
+      setContextMenu({
+        x: event.clientX - left,
+        y: event.clientY - top,
+        visible: true,
+        type: 'canvas'
+      });
+    },
+    []
+  );
+
+  const onMouseMove = useCallback((event: React.MouseEvent) => {
+    if (reactFlowWrapper.current) {
+      const bounds = reactFlowWrapper.current.getBoundingClientRect()
+      const position = project({
+        x: event.clientX - bounds.left,
+        y: event.clientY - bounds.top,
+      })
+      setMousePosition(position)
+    }
+  }, [project])
+
+  // Use react-hotkeys-hook for keyboard shortcuts
+  useHotkeys('ctrl+z', undo, [undo])
+  useHotkeys('ctrl+y', redo, [redo])
+  useHotkeys('ctrl+x', cut, [cut])
+  useHotkeys('ctrl+c', copy, [copy])
+  useHotkeys('ctrl+v', paste, [paste])
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (reactFlowWrapper.current && !reactFlowWrapper.current.contains(event.target as Element)) {
+        closeContextMenu();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [closeContextMenu]);
+
+  useEffect(() => {
+    return () => {
+      debouncedAddToHistory.cancel();
+    };
+  }, [debouncedAddToHistory]);
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex-grow flex">
@@ -459,7 +654,7 @@ export default function ProcessMapper({ user }: ProcessMapperProps) {
           onManageFlows={handleManageFlows}
           user={user}
         />
-        <div className="flex-grow" ref={reactFlowWrapper}>
+        <div className="flex-grow relative" ref={reactFlowWrapper} onMouseMove={onMouseMove}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -472,53 +667,35 @@ export default function ProcessMapper({ user }: ProcessMapperProps) {
             onNodeClick={onNodeClick}
             onEdgeClick={onEdgeClick}
             onNodeDoubleClick={onNodeDoubleClick}
-            onPaneClick={onPaneClick}
-            nodeTypes={nodeTypes}
-            edgeTypes={edgeTypes}
+            onPaneClick={handlePaneClick}
             onNodeContextMenu={onNodeContextMenu}
             onEdgeContextMenu={onEdgeContextMenu}
+            onPaneContextMenu={onPaneContextMenu}
+            onNodeMouseEnter={() => setContextMenu(prev => ({ ...prev, visible: false }))}
+            nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
             fitView
           >
             <Controls />
             <MiniMap />
             <Background color="#aaa" gap={12} size={1} />
+            
+            {contextMenu.visible && (
+              <ContextMenu
+                x={contextMenu.x}
+                y={contextMenu.y}
+                onDuplicate={() => handleContextMenuAction('duplicate')}
+                onDelete={() => handleContextMenuAction('delete')}
+                onCopy={() => handleContextMenuAction('copy')}
+                onCut={() => handleContextMenuAction('cut')}
+                onPaste={() => handleContextMenuAction('paste')}
+                canDuplicate={contextMenu.type === 'node'}
+                canDelete={contextMenu.type !== 'canvas'}
+                canCopy={contextMenu.type !== 'canvas' && (nodes.some(n => n.selected) || edges.some(e => e.selected))}
+                canPaste={!!clipboard}
+              />
+            )}
           </ReactFlow>
-          {contextMenu.visible && (
-            <div
-              style={{
-                position: 'absolute',
-                top: contextMenu.y,
-                left: contextMenu.x,
-                zIndex: 1000,
-              }}
-              className="bg-white border rounded shadow-md p-2"
-            >
-              {selectedNode && (
-                <>
-                  <button
-                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                    onClick={duplicateNode}
-                  >
-                    Duplicate
-                  </button>
-                  <button
-                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                    onClick={deleteSelectedElements}
-                  >
-                    Delete
-                  </button>
-                </>
-              )}
-              {!selectedNode && (
-                <button
-                  className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                  onClick={deleteSelectedElements}
-                >
-                  Delete
-                </button>
-              )}
-            </div>
-          )}
         </div>
       </div>
       <Dialog 

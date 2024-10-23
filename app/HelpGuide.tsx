@@ -10,6 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function HelpGuide() {
   const [isOpen, setIsOpen] = useState(false)
@@ -29,52 +30,68 @@ export default function HelpGuide() {
             Learn how to use the Data Process Mapper effectively.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="h-[400px] pr-4">
-          <div className="space-y-4">
-            <section>
-              <h3 className="text-lg font-semibold">Getting Started</h3>
-              <p>Welcome to the Data Process Mapper! This tool helps you visualize and design data processes using a drag-and-drop interface.</p>
-            </section>
-            <section>
-              <h3 className="text-lg font-semibold">Components</h3>
-              <ul className="list-disc pl-6">
-                <li><strong>Process:</strong> Represents a data processing step.</li>
-                <li><strong>Database:</strong> Represents a database or data storage.</li>
-                <li><strong>Application:</strong> Represents an application in your data flow.</li>
-                <li><strong>Schema:</strong> Represents a data schema or structure.</li>
-                <li><strong>Text Annotation:</strong> Adds explanatory text to your diagram.</li>
-              </ul>
-            </section>
-            <section>
-              <h3 className="text-lg font-semibold">Creating a Flow</h3>
-              <ol className="list-decimal pl-6">
-                <li>Drag components from the left sidebar onto the canvas.</li>
-                <li>Connect components by clicking and dragging from one node&apos;s handle to another.</li>
-                <li>Customize node properties by double clicking on a node and using the properties panel.</li>
-                <li>Customize connection properties by clicking on a connection and using the properties panel.</li>
-                <li>Right click on a node or connection to open the delete menu.</li>
-              </ol>
-            </section>
-            <section>
-              <h3 className="text-lg font-semibold">Import/Export Options</h3>
-              <ul className="list-disc pl-6">
-                <li><strong>Import Previous Model:</strong> Load a previously saved model (Only JSON format supported currently).</li>
-                <li><strong>Export to PNG:</strong> Save your diagram as an image.</li>
-                <li><strong>Export to JSON:</strong> Save your diagram data for later use.</li>
-                <li><strong>Export to TXT:</strong> Export your diagram data as plain text C4 Model.</li>
-              </ul>
-            </section>
-            <section>
-              <h3 className="text-lg font-semibold">Tips and Tricks</h3>
-              <ul className="list-disc pl-6">
-                <li>Use the zoom and pan controls to navigate large diagrams.</li>
-                <li>Group related nodes to keep your diagram organized.</li>
-                <li>Use text annotations to add context to your diagram.</li>
-                <li>Regularly save your work using the export options.</li>
-              </ul>
-            </section>
-          </div>
-        </ScrollArea>
+        <Tabs defaultValue="getting-started">
+          <TabsList>
+            <TabsTrigger value="getting-started">Getting Started</TabsTrigger>
+            <TabsTrigger value="components">Components</TabsTrigger>
+            <TabsTrigger value="import-export">Import/Export</TabsTrigger>
+            <TabsTrigger value="keyboard-shortcuts">Keyboard Shortcuts</TabsTrigger>
+          </TabsList>
+          <ScrollArea className="h-[400px] mt-4 pr-4">
+            <TabsContent value="getting-started">
+              <section>
+                <h3 className="text-lg font-semibold">Getting Started</h3>
+                <p>Welcome to the Data Process Mapper! This tool helps you visualize and design data processes using a drag-and-drop interface.</p>
+              </section>
+              <section>
+                <h3 className="text-lg font-semibold">Creating a Flow</h3>
+                <ol className="list-decimal pl-6">
+                  <li>Drag components from the left sidebar onto the canvas.</li>
+                  <li>Connect components by clicking and dragging from one node&apos;s handle to another.</li>
+                  <li>Customize node properties by double clicking on a node and using the properties panel.</li>
+                  <li>Customize connection properties by clicking on a connection and using the properties panel.</li>
+                  <li>Right click on a node or connection to open the delete menu.</li>
+                </ol>
+              </section>
+            </TabsContent>
+            <TabsContent value="components">
+              <section>
+                <h3 className="text-lg font-semibold">Components</h3>
+                <ul className="list-disc pl-6">
+                  <li><strong>Process:</strong> Represents a data processing step.</li>
+                  <li><strong>Database:</strong> Represents a database or data storage.</li>
+                  <li><strong>Application:</strong> Represents an application in your data flow.</li>
+                  <li><strong>Schema:</strong> Represents a data schema or structure.</li>
+                  <li><strong>Text Annotation:</strong> Adds explanatory text to your diagram.</li>
+                </ul>
+              </section>
+            </TabsContent>
+            <TabsContent value="import-export">
+              <section>
+                <h3 className="text-lg font-semibold">Import/Export Options</h3>
+                <ul className="list-disc pl-6">
+                  <li><strong>Import Previous Model:</strong> Load a previously saved model (Only JSON format supported currently).</li>
+                  <li><strong>Export to PNG:</strong> Save your diagram as an image.</li>
+                  <li><strong>Export to JSON:</strong> Save your diagram data for later use.</li>
+                  <li><strong>Export to TXT:</strong> Export your diagram data as plain text C4 Model.</li>
+                </ul>
+              </section>
+            </TabsContent>
+            <TabsContent value="keyboard-shortcuts">
+              <section>
+                <h3 className="text-lg font-semibold">Keyboard Shortcuts</h3>
+                <ul className="list-disc pl-6">
+                  <li><strong>Ctrl + Z:</strong> Undo the last action</li>
+                  <li><strong>Ctrl + Y:</strong> Redo the last undone action</li>
+                  <li><strong>Ctrl + X:</strong> Cut selected nodes and edges</li>
+                  <li><strong>Ctrl + C:</strong> Copy selected nodes and edges</li>
+                  <li><strong>Ctrl + V:</strong> Paste previously cut or copied nodes and edges</li>
+                  <li><strong>Delete:</strong> Delete selected nodes and edges</li>
+                </ul>
+              </section>
+            </TabsContent>
+          </ScrollArea>
+        </Tabs>
       </DialogContent>
     </Dialog>
   )
