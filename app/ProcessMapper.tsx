@@ -21,6 +21,7 @@ import ReactFlow, {
   applyEdgeChanges,
   NodeChange,
   EdgeChange,
+  MarkerType,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { toPng } from 'html-to-image'
@@ -57,10 +58,6 @@ import ContextMenu from './ContextMenu'
 //   schema: SchemaNode,
 //   text: TextNode,
 // }
-
-const edgeTypes = {
-  custom: CustomEdge,
-};
 
 interface ProcessMapperProps {
   user: User | null
@@ -139,7 +136,13 @@ export default function ProcessMapper({ user }: ProcessMapperProps) {
   );
 
   const onConnect = useCallback((params: Connection) => {
-    setEdges((eds) => addEdge(params, eds));
+    setEdges((eds) => addEdge({
+      ...params,
+      type: 'custom',
+      animated: true,
+      markerEnd: { type: MarkerType.ArrowClosed },
+      data: { text: '' }, // Initialize with empty text
+    }, eds));
     addToHistory();
   }, [setEdges, addToHistory]);
 
@@ -239,15 +242,8 @@ export default function ProcessMapper({ user }: ProcessMapperProps) {
     if (isDeleteMode) {
       setEdges((eds) => eds.filter((e) => e.id !== edge.id))
       addToHistory()
-    } else {
-      // Toggle edge selection
-      setEdges((eds) => 
-        eds.map((e) => 
-          e.id === edge.id ? { ...e, selected: !e.selected } : { ...e, selected: false }
-        )
-      );
-      addToHistory()
     }
+    // We're not toggling edge selection here anymore
   }, [isDeleteMode, setEdges, addToHistory])
 
   const onNodeDoubleClick = useCallback((event: React.MouseEvent, node: Node) => {
@@ -641,6 +637,10 @@ export default function ProcessMapper({ user }: ProcessMapperProps) {
     };
   }, [debouncedAddToHistory]);
 
+  const edgeTypes = useMemo(() => ({
+    custom: CustomEdge,
+  }), []);
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex-grow flex">
@@ -674,6 +674,11 @@ export default function ProcessMapper({ user }: ProcessMapperProps) {
             onNodeMouseEnter={() => setContextMenu(prev => ({ ...prev, visible: false }))}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
+            defaultEdgeOptions={{
+              type: 'custom',
+              animated: true,
+              markerEnd: { type: MarkerType.ArrowClosed },
+            }}
             fitView
           >
             <Controls />

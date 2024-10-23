@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 
-// Define a custom type that extends EdgeProps
 interface CustomEdgeProps extends EdgeProps {
   type?: string;
 }
@@ -137,7 +136,6 @@ const CustomEdge: React.FC<CustomEdgeProps> = (props) => {
     }));
   }, [setEdges]);
 
-  // Calculate the angle of the line
   const dx = targetX - sourceX;
   const dy = targetY - sourceY;
   const angle = Math.atan2(dy, dx) * (180 / Math.PI);
@@ -145,7 +143,6 @@ const CustomEdge: React.FC<CustomEdgeProps> = (props) => {
   return (
     <>
       <g onClick={onEdgeClick}>
-        {/* Invisible wider path for better click detection */}
         <path
           d={edgePath}
           fill="none"
@@ -153,7 +150,6 @@ const CustomEdge: React.FC<CustomEdgeProps> = (props) => {
           strokeWidth={20}
           className="react-flow__edge-interaction"
         />
-        {/* Visible edge path */}
         <path
           id={id}
           style={style}
