@@ -8,11 +8,13 @@ import ProcessMapper from './ProcessMapper'
 import HelpGuide from './HelpGuide'
 import AuthModal from '../components/AuthModal'
 import { ReactFlowProvider } from 'reactflow'
+import LandingPage from './LandingPage'
 
 export default function App() {
   const [supabaseClient] = useState(() => createClientComponentClient())
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [showProcessMapper, setShowProcessMapper] = useState(false)
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -36,18 +38,24 @@ export default function App() {
 
   return (
     <SessionContextProvider supabaseClient={supabaseClient}>
+      {showProcessMapper ? (
       <div className="h-screen flex flex-col">
-        <header className="bg-primary text-primary-foreground p-4">
+        <header className="bg-primary text-primary-foreground p-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold">Data Process Mapper</h1>
-          <AuthModal user={user} setUser={setUser} />
-          <HelpGuide />
+          <nav className="flex top-4 right-4 items-center space-x-4">
+            <HelpGuide />
+            <AuthModal user={user} setUser={setUser} />
+          </nav>
         </header>
         <main className="flex-grow">
           <ReactFlowProvider>
             <ProcessMapper user={user} />
           </ReactFlowProvider>
         </main>
-      </div>
+        </div>
+      ) : (
+        <LandingPage user={user} setUser={setUser} onCallToAction={() => setShowProcessMapper(true)} />
+      )}
     </SessionContextProvider>
   )
 }

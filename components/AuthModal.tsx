@@ -121,14 +121,14 @@ export default function AuthModal({ user, setUser }: AuthModalProps) {
             <Button 
               variant="ghost" 
               onClick={handleSignOut} 
-              className="fixed top-4 right-4 z-50 "
+              className="relative z-50 "
             >
               Sign Out
             </Button>
           ) : (
             <Button 
               variant="ghost" 
-              className="fixed top-4 right-4 z-50"
+              className="relative z-50"
             >
               Sign In
             </Button>
